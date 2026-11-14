@@ -1,12 +1,17 @@
+import { User } from 'firebase/auth';
 import {
   Activity,
   ArrowLeftRight,
   Building2,
   Code2,
+  Landmark,
+  LogIn,
+  LogOut,
   ShieldCheck,
 } from 'lucide-react';
-import { NavSection } from '../types/protocol';
+import { GovernanceLockTier, NavSection } from '../types/protocol';
 import { formatNumber, formatPegPrice } from '../utils/format';
+import { LOCK_MULTIPLIERS } from './GovernanceView';
 
 interface SidebarProps {
   activeSection: NavSection;
@@ -14,6 +19,11 @@ interface SidebarProps {
   spotPriceUsd: number;
   userEpkBalance: number;
   userUsdcBalance: number;
+  governanceLockTier: GovernanceLockTier;
+  currentUser: User | null;
+  authLoading: boolean;
+  onSignIn: () => void;
+  onSignOut: () => void;
   isMobileOpen: boolean;
   onCloseMobile: () => void;
 }
@@ -22,6 +32,7 @@ const NAV_ITEMS: { id: NavSection; label: string; icon: typeof Activity }[] = [
   { id: 'overview', label: 'Overview & Peg', icon: Activity },
   { id: 'auto-liquidity', label: 'Auto-Liquidity', icon: ArrowLeftRight },
   { id: 'exchanges', label: 'Exchange Listings', icon: Building2 },
+  { id: 'governance', label: 'Governance', icon: Landmark },
   { id: 'contracts', label: 'Smart Contracts', icon: Code2 },
   { id: 'reserves', label: 'Reserves & Ledger', icon: ShieldCheck },
 ];
@@ -32,11 +43,19 @@ export function Sidebar({
   spotPriceUsd,
   userEpkBalance,
   userUsdcBalance,
+  governanceLockTier,
+  currentUser,
+  authLoading,
+  onSignIn,
+  onSignOut,
   isMobileOpen,
   onCloseMobile,
 }: SidebarProps) {
   const pegDeltaPct = ((spotPriceUsd - 1) * 100).toFixed(2);
   const pegSign = spotPriceUsd >= 1 ? '+' : '';
+  const votingPower = Math.floor(
+    userEpkBalance * LOCK_MULTIPLIERS[governanceLockTier].multiplier
+  );
 
   const content = (
     <div className="flex h-full flex-col justify-between bg-white border-r border-slate-200 w-64">
@@ -106,7 +125,45 @@ export function Sidebar({
               {formatNumber(userUsdcBalance, 2)} USDC
             </span>
           </div>
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">Voting Power</span>
+            <span className="font-mono tabular-nums font-medium text-emerald-700">
+              {formatNumber(votingPower, 0)} vEPK
+            </span>
+          </div>
         </div>
+        <div className="h-px bg-slate-200" />
+        {currentUser ? (
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-xs font-medium text-slate-900 truncate">
+                {currentUser.displayName || 'EPK Account'}
+              </div>
+              <div className="text-[11px] text-slate-500 truncate">
+                {currentUser.email}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 rounded-md transition-colors shrink-0"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={authLoading}
+            onClick={onSignIn}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 rounded-lg transition-colors whitespace-nowrap"
+          >
+            <LogIn className="h-3.5 w-3.5 shrink-0" />
+            <span>{authLoading ? 'Connecting...' : 'Sign in with Google'}</span>
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { ArrowDownRight, ArrowUpRight, RefreshCw } from 'lucide-react';
-import { ProtocolState } from '../types/protocol';
+import { NavSection, ProtocolState } from '../types/protocol';
 import {
   formatCompactUsd,
   formatNumber,
@@ -7,13 +7,12 @@ import {
   formatUsd,
 } from '../utils/format';
 import { PegChart } from './PegChart';
+import { TvlAreaChart } from './TvlAreaChart';
 
 interface OverviewViewProps {
   state: ProtocolState;
   onSimulateShock: (kind: 'sell' | 'buy' | 'rebalance') => void;
-  onNavigate: (
-    section: 'overview' | 'auto-liquidity' | 'exchanges' | 'contracts' | 'reserves'
-  ) => void;
+  onNavigate: (section: NavSection) => void;
 }
 
 export function OverviewView({
@@ -30,6 +29,18 @@ export function OverviewView({
   const listedVenuesCount = state.exchanges.filter(
     (e) => e.status === 'Listed'
   ).length;
+  const activePools = state.pools.filter((p) => p.status === 'Active');
+  const liveActiveTvl = activePools.reduce((acc, p) => acc + p.tvlUsd, 0);
+  const liveTvlSeries = state.tvlHistory.map((pt, idx) =>
+    idx === state.tvlHistory.length - 1
+      ? {
+          ...pt,
+          totalTvlUsd: liveActiveTvl,
+          activePoolsCount: activePools.length,
+          autoLpContributionUsd: state.totalAutoLpInjectedUsd,
+        }
+      : pt
+  );
   const isPegHealthy = Math.abs(pegDeviationBps) <= state.autoLpConfig.pegGuardBandBps;
 
   return (
@@ -203,12 +214,35 @@ export function OverviewView({
         </section>
       </div>
 
+      {/* D3 Historical TVL Area Chart across Active Pools */}
+      <section className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200">
+          <div>
+            <h2 className="font-display text-lg font-semibold text-slate-900">
+              02. Active Liquidity Pools — Historical TVL Growth
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Cumulative Total Value Locked across {activePools.length} active DEX pools and automated protocol liquidity injections
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('exchanges')}
+            className="text-xs font-medium text-emerald-700 hover:text-emerald-800 whitespace-nowrap shrink-0"
+          >
+            Deploy Additional Pools →
+          </button>
+        </div>
+
+        <TvlAreaChart data={liveTvlSeries} />
+      </section>
+
       {/* Recent Protocol Activity Table */}
       <section className="bg-white border border-slate-200 rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between gap-4">
           <div>
             <h2 className="font-display text-base font-semibold text-slate-900">
-              02. Recent Protocol & Auto-Liquidity Ledger
+              03. Recent Protocol & Auto-Liquidity Ledger
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Real-time state transitions from mints, swaps, liquidity injections, and exchange updates

@@ -1,0 +1,407 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user account profile, private EPK/USDC wallet balances, and governance lock stance.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the wallet owner."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 254,
+          "description": "Verified account email address."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "User display name."
+        },
+        "epkBalance": {
+          "type": "number",
+          "description": "User EPK stablecoin balance."
+        },
+        "usdcBalance": {
+          "type": "number",
+          "description": "User USDC collateral balance."
+        },
+        "governanceLockTier": {
+          "type": "string",
+          "enum": ["liquid", "90d", "365d"],
+          "description": "Selected EPK governance voting multiplier tier."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "displayName",
+        "epkBalance",
+        "usdcBalance",
+        "governanceLockTier",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ProtocolWorkspace": {
+      "title": "ProtocolWorkspace",
+      "description": "User-scoped protocol simulation state, auto-liquidity parameters, pool depths, and exchange pipeline.",
+      "type": "object",
+      "properties": {
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner UID matching request.auth.uid."
+        },
+        "activeChain": {
+          "type": "string",
+          "enum": ["bsc", "ethereum", "base", "polygon"],
+          "description": "Selected target blockchain network."
+        },
+        "spotPriceUsd": {
+          "type": "number",
+          "description": "Current simulated EPK spot price in USD."
+        },
+        "targetPegUsd": {
+          "type": "number",
+          "description": "Target USD peg (1.0)."
+        },
+        "totalSupplyEpk": {
+          "type": "number",
+          "description": "Circulating EPK supply."
+        },
+        "treasuryReserveUsd": {
+          "type": "number",
+          "description": "Total USD collateral reserves."
+        },
+        "pendingAutoLpEpk": {
+          "type": "number",
+          "description": "Pending EPK accumulated in the auto-liquidity bucket."
+        },
+        "totalAutoLpInjectedUsd": {
+          "type": "number",
+          "description": "Cumulative USD liquidity injected via swapAndLiquify."
+        },
+        "autoLpConfig": {
+          "type": "object",
+          "description": "Auto-liquidity and PSM fee configuration map."
+        },
+        "pools": {
+          "type": "array",
+          "description": "Bounded list of DEX liquidity pools."
+        },
+        "exchanges": {
+          "type": "array",
+          "description": "Bounded list of DEX and CEX exchange venues."
+        },
+        "reserves": {
+          "type": "array",
+          "description": "Bounded list of treasury reserve instruments."
+        },
+        "pegHistory": {
+          "type": "array",
+          "description": "Bounded peg stability time series."
+        },
+        "tvlHistory": {
+          "type": "array",
+          "description": "Bounded historical TVL series."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "ownerUid",
+        "activeChain",
+        "spotPriceUsd",
+        "targetPegUsd",
+        "totalSupplyEpk",
+        "treasuryReserveUsd",
+        "pendingAutoLpEpk",
+        "totalAutoLpInjectedUsd",
+        "autoLpConfig",
+        "pools",
+        "exchanges",
+        "reserves",
+        "pegHistory",
+        "tvlHistory",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LedgerEvent": {
+      "title": "LedgerEvent",
+      "description": "Immutable protocol action or auto-liquidity event recorded inside a workspace.",
+      "type": "object",
+      "properties": {
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Workspace owner UID."
+        },
+        "timestamp": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 32,
+          "description": "Human-readable UTC timestamp."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["Mint", "Redeem", "Swap", "Auto-LP", "Rebalance", "Exchange", "Governance"],
+          "description": "Protocol event category."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "description": "Concise event description."
+        },
+        "amountEpk": {
+          "type": "number",
+          "description": "EPK volume involved."
+        },
+        "usdValue": {
+          "type": "number",
+          "description": "USD value of the transaction."
+        },
+        "postPegPrice": {
+          "type": "number",
+          "description": "EPK peg price after transaction."
+        },
+        "txHash": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 80,
+          "description": "Transaction hash identifier."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        }
+      },
+      "required": [
+        "ownerUid",
+        "timestamp",
+        "type",
+        "summary",
+        "amountEpk",
+        "usdValue",
+        "postPegPrice",
+        "txHash",
+        "createdAt"
+      ]
+    },
+    "GovernanceProposal": {
+      "title": "GovernanceProposal",
+      "description": "Shared protocol governance improvement proposal.",
+      "type": "object",
+      "properties": {
+        "proposalCode": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 32,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Human-readable proposal code such as EPK-GIP-04."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 160,
+          "description": "Proposal title."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 2000,
+          "description": "Detailed proposal rationale."
+        },
+        "proposerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the user who created the proposal."
+        },
+        "proposerLabel": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64,
+          "description": "Masked proposer address or label."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["PSM Fee", "Auto-LP Threshold", "Auto-LP Fee", "Peg Guard Band", "Treasury"],
+          "description": "Proposal category."
+        },
+        "parameterChange": {
+          "type": "object",
+          "description": "Optional structured parameter update payload."
+        },
+        "votesFor": {
+          "type": "number",
+          "description": "Total vEPK votes in favor."
+        },
+        "votesAgainst": {
+          "type": "number",
+          "description": "Total vEPK votes against."
+        },
+        "votesAbstain": {
+          "type": "number",
+          "description": "Total vEPK abstain votes."
+        },
+        "quorumRequired": {
+          "type": "number",
+          "description": "Minimum vEPK votes needed for quorum."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Active", "Passed", "Executed", "Rejected"],
+          "description": "Proposal lifecycle status."
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["public"],
+          "description": "Governance visibility marker."
+        },
+        "createdDate": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 20,
+          "description": "ISO calendar date string."
+        },
+        "endsAt": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 20,
+          "description": "ISO voting end date string."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "proposalCode",
+        "title",
+        "description",
+        "proposerUid",
+        "proposerLabel",
+        "category",
+        "votesFor",
+        "votesAgainst",
+        "votesAbstain",
+        "quorumRequired",
+        "status",
+        "visibility",
+        "createdDate",
+        "endsAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ProposalVote": {
+      "title": "ProposalVote",
+      "description": "Individual user's vEPK vote record on a governance proposal.",
+      "type": "object",
+      "properties": {
+        "proposalId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent proposal document ID."
+        },
+        "voterUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the voter."
+        },
+        "choice": {
+          "type": "string",
+          "enum": ["for", "against", "abstain"],
+          "description": "Vote choice."
+        },
+        "votePower": {
+          "type": "number",
+          "description": "Calculated vEPK voting power used."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "proposalId",
+        "voterUid",
+        "choice",
+        "votePower",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user account profile and wallet balances."
+    },
+    "/workspaces/{workspaceId}": {
+      "schema": { "$ref": "#/entities/ProtocolWorkspace" },
+      "description": "User-owned protocol simulation state, auto-LP parameters, pools, and exchange pipeline."
+    },
+    "/workspaces/{workspaceId}/events/{eventId}": {
+      "schema": { "$ref": "#/entities/LedgerEvent" },
+      "description": "Subcollection of immutable protocol ledger events belonging to a workspace."
+    },
+    "/proposals/{proposalId}": {
+      "schema": { "$ref": "#/entities/GovernanceProposal" },
+      "description": "Shared DAO governance proposals."
+    },
+    "/proposals/{proposalId}/votes/{voterId}": {
+      "schema": { "$ref": "#/entities/ProposalVote" },
+      "description": "Per-user vote records scoped under each governance proposal."
+    }
+  }
+}

@@ -14,6 +14,7 @@ const SECTION_LABELS: Record<NavSection, string> = {
   overview: 'Overview & Peg Stability',
   'auto-liquidity': 'Auto-Liquidity Engine',
   exchanges: 'Exchange Listings',
+  governance: 'Protocol Governance',
   contracts: 'Smart Contracts & Deployment',
   reserves: 'Proof of Reserves & Ledger',
 };

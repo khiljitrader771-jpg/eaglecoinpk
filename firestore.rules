@@ -1,0 +1,416 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'anas03091118011@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+          'uid',
+          'email',
+          'displayName',
+          'epkBalance',
+          'usdcBalance',
+          'governanceLockTier',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid',
+          'email',
+          'displayName',
+          'epkBalance',
+          'usdcBalance',
+          'governanceLockTier',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 254 &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120 &&
+        data.epkBalance is number && data.epkBalance >= 0 && data.epkBalance <= 1000000000 &&
+        data.usdcBalance is number && data.usdcBalance >= 0 && data.usdcBalance <= 1000000000 &&
+        data.governanceLockTier in ['liquid', '90d', '365d'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidWorkspace(data) {
+      return data.keys().hasAll([
+          'ownerUid',
+          'activeChain',
+          'spotPriceUsd',
+          'targetPegUsd',
+          'totalSupplyEpk',
+          'treasuryReserveUsd',
+          'pendingAutoLpEpk',
+          'totalAutoLpInjectedUsd',
+          'autoLpConfig',
+          'pools',
+          'exchanges',
+          'reserves',
+          'pegHistory',
+          'tvlHistory',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerUid',
+          'activeChain',
+          'spotPriceUsd',
+          'targetPegUsd',
+          'totalSupplyEpk',
+          'treasuryReserveUsd',
+          'pendingAutoLpEpk',
+          'totalAutoLpInjectedUsd',
+          'autoLpConfig',
+          'pools',
+          'exchanges',
+          'reserves',
+          'pegHistory',
+          'tvlHistory',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.ownerUid) &&
+        data.activeChain in ['bsc', 'ethereum', 'base', 'polygon'] &&
+        data.spotPriceUsd is number && data.spotPriceUsd >= 0.5 && data.spotPriceUsd <= 2.0 &&
+        data.targetPegUsd is number && data.targetPegUsd == 1.0 &&
+        data.totalSupplyEpk is number && data.totalSupplyEpk >= 0 &&
+        data.treasuryReserveUsd is number && data.treasuryReserveUsd >= 0 &&
+        data.pendingAutoLpEpk is number && data.pendingAutoLpEpk >= 0 &&
+        data.totalAutoLpInjectedUsd is number && data.totalAutoLpInjectedUsd >= 0 &&
+        data.autoLpConfig is map &&
+        data.autoLpConfig.keys().hasAll([
+          'autoLpFeeBps',
+          'liquifyThresholdEpk',
+          'pegGuardBandBps',
+          'lpLockDays',
+          'autoCompoundEnabled',
+          'psmFeeBps'
+        ]) &&
+        data.autoLpConfig.keys().hasOnly([
+          'autoLpFeeBps',
+          'liquifyThresholdEpk',
+          'pegGuardBandBps',
+          'lpLockDays',
+          'autoCompoundEnabled',
+          'psmFeeBps'
+        ]) &&
+        data.pools is list && data.pools.size() >= 1 && data.pools.size() <= 20 && data.pools[0] is map &&
+        data.exchanges is list && data.exchanges.size() >= 1 && data.exchanges.size() <= 30 && data.exchanges[0] is map &&
+        data.reserves is list && data.reserves.size() >= 1 && data.reserves.size() <= 20 && data.reserves[0] is map &&
+        data.pegHistory is list && data.pegHistory.size() >= 1 && data.pegHistory.size() <= 24 && data.pegHistory[0] is map &&
+        data.tvlHistory is list && data.tvlHistory.size() >= 1 && data.tvlHistory.size() <= 24 && data.tvlHistory[0] is map &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidLedgerEvent(data) {
+      return data.keys().hasAll([
+          'ownerUid',
+          'timestamp',
+          'type',
+          'summary',
+          'amountEpk',
+          'usdValue',
+          'postPegPrice',
+          'txHash',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerUid',
+          'timestamp',
+          'type',
+          'summary',
+          'amountEpk',
+          'usdValue',
+          'postPegPrice',
+          'txHash',
+          'createdAt'
+        ]) &&
+        isValidId(data.ownerUid) &&
+        data.timestamp is string && data.timestamp.size() >= 4 && data.timestamp.size() <= 32 &&
+        data.type in ['Mint', 'Redeem', 'Swap', 'Auto-LP', 'Rebalance', 'Exchange', 'Governance'] &&
+        data.summary is string && data.summary.size() >= 1 && data.summary.size() <= 300 &&
+        data.amountEpk is number && data.amountEpk >= 0 &&
+        data.usdValue is number && data.usdValue >= 0 &&
+        data.postPegPrice is number && data.postPegPrice >= 0.5 && data.postPegPrice <= 2.0 &&
+        data.txHash is string && data.txHash.size() >= 4 && data.txHash.size() <= 80 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidProposal(data) {
+      return data.keys().hasAll([
+          'proposalCode',
+          'title',
+          'description',
+          'proposerUid',
+          'proposerLabel',
+          'category',
+          'votesFor',
+          'votesAgainst',
+          'votesAbstain',
+          'quorumRequired',
+          'status',
+          'visibility',
+          'createdDate',
+          'endsAt',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'proposalCode',
+          'title',
+          'description',
+          'proposerUid',
+          'proposerLabel',
+          'category',
+          'parameterChange',
+          'votesFor',
+          'votesAgainst',
+          'votesAbstain',
+          'quorumRequired',
+          'status',
+          'visibility',
+          'createdDate',
+          'endsAt',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.proposalCode) && data.proposalCode.size() >= 3 && data.proposalCode.size() <= 32 &&
+        data.title is string && data.title.size() >= 5 && data.title.size() <= 160 &&
+        data.description is string && data.description.size() >= 10 && data.description.size() <= 2000 &&
+        isValidId(data.proposerUid) &&
+        data.proposerLabel is string && data.proposerLabel.size() >= 2 && data.proposerLabel.size() <= 64 &&
+        data.category in ['PSM Fee', 'Auto-LP Threshold', 'Auto-LP Fee', 'Peg Guard Band', 'Treasury'] &&
+        (!('parameterChange' in data) || (
+          data.parameterChange is map &&
+          data.parameterChange.keys().hasAll(['field', 'targetValue', 'summaryLabel']) &&
+          data.parameterChange.keys().hasOnly(['field', 'targetValue', 'summaryLabel']) &&
+          data.parameterChange.field in ['psmFeeBps', 'liquifyThresholdEpk', 'autoLpFeeBps', 'pegGuardBandBps'] &&
+          data.parameterChange.targetValue is number &&
+          data.parameterChange.summaryLabel is string && data.parameterChange.summaryLabel.size() <= 160
+        )) &&
+        data.votesFor is number && data.votesFor >= 0 &&
+        data.votesAgainst is number && data.votesAgainst >= 0 &&
+        data.votesAbstain is number && data.votesAbstain >= 0 &&
+        data.quorumRequired is number && data.quorumRequired >= 1 &&
+        data.status in ['Active', 'Passed', 'Executed', 'Rejected'] &&
+        data.visibility == 'public' &&
+        data.createdDate is string && data.createdDate.size() >= 8 && data.createdDate.size() <= 20 &&
+        data.endsAt is string && data.endsAt.size() >= 8 && data.endsAt.size() <= 20 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidProposalVote(data) {
+      return data.keys().hasAll([
+          'proposalId',
+          'voterUid',
+          'choice',
+          'votePower',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'proposalId',
+          'voterUid',
+          'choice',
+          'votePower',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.proposalId) &&
+        isValidId(data.voterUid) &&
+        data.choice in ['for', 'against', 'abstain'] &&
+        data.votePower is number && data.votePower > 0 && data.votePower <= 1000000000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && (isOwner(adminId) || isAdmin());
+      allow list, create, update, delete: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin() || (isVerifiedUser() && existing().uid == request.auth.uid);
+      allow create: if isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(userId) &&
+        (isOwner(userId) || isAdmin()) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName',
+          'epkBalance',
+          'usdcBalance',
+          'governanceLockTier',
+          'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /workspaces/{workspaceId} {
+      allow get: if isValidId(workspaceId) && (isOwner(workspaceId) || isAdmin());
+      allow list: if isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid);
+      allow create: if isValidId(workspaceId) &&
+        isOwner(workspaceId) &&
+        isValidWorkspace(incoming()) &&
+        incoming().ownerUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(workspaceId) &&
+        (isOwner(workspaceId) || isAdmin()) &&
+        isValidWorkspace(incoming()) &&
+        incoming().ownerUid == existing().ownerUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'activeChain',
+          'spotPriceUsd',
+          'totalSupplyEpk',
+          'treasuryReserveUsd',
+          'pendingAutoLpEpk',
+          'totalAutoLpInjectedUsd',
+          'autoLpConfig',
+          'pools',
+          'exchanges',
+          'reserves',
+          'pegHistory',
+          'tvlHistory',
+          'updatedAt'
+        ]);
+      allow delete: if false;
+
+      match /events/{eventId} {
+        allow get: if isValidId(workspaceId) &&
+          isValidId(eventId) &&
+          (isAdmin() || (
+            isVerifiedUser() &&
+            get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerUid == request.auth.uid
+          ));
+        allow list: if isValidId(workspaceId) &&
+          (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
+        allow create: if isValidId(workspaceId) &&
+          isValidId(eventId) &&
+          isVerifiedUser() &&
+          isValidLedgerEvent(incoming()) &&
+          incoming().ownerUid == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerUid == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    match /proposals/{proposalId} {
+      allow get: if isValidId(proposalId) &&
+        (isAdmin() || (isVerifiedUser() && (existing().visibility == 'public' || existing().proposerUid == request.auth.uid)));
+      allow list: if isAdmin() || (isVerifiedUser() && existing().visibility == 'public');
+      allow create: if isValidId(proposalId) &&
+        isVerifiedUser() &&
+        isValidProposal(incoming()) &&
+        (incoming().proposerUid == request.auth.uid || isAdmin()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(proposalId) &&
+        isVerifiedUser() &&
+        isValidProposal(incoming()) &&
+        incoming().proposerUid == existing().proposerUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            existing().status in ['Active', 'Passed'] &&
+            (
+              (
+                incoming().diff(existing()).affectedKeys().hasOnly([
+                  'votesFor',
+                  'votesAgainst',
+                  'votesAbstain',
+                  'status',
+                  'updatedAt'
+                ]) &&
+                incoming().status in ['Active', 'Passed']
+              ) ||
+              (
+                existing().status == 'Passed' &&
+                incoming().status == 'Executed' &&
+                incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+              )
+            )
+          )
+        );
+      allow delete: if false;
+
+      match /votes/{voterId} {
+        allow get: if isValidId(proposalId) && isValidId(voterId) && (isOwner(voterId) || isAdmin());
+        allow list: if isValidId(proposalId) &&
+          (isAdmin() || (isVerifiedUser() && existing().voterUid == request.auth.uid));
+        allow create: if isValidId(proposalId) &&
+          isValidId(voterId) &&
+          isOwner(voterId) &&
+          isValidProposalVote(incoming()) &&
+          incoming().proposalId == proposalId &&
+          incoming().voterUid == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          get(/databases/$(database)/documents/proposals/$(proposalId)).data.status in ['Active', 'Passed'];
+        allow update: if isValidId(proposalId) &&
+          isValidId(voterId) &&
+          isOwner(voterId) &&
+          isValidProposalVote(incoming()) &&
+          incoming().proposalId == existing().proposalId &&
+          incoming().voterUid == existing().voterUid &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['choice', 'votePower', 'updatedAt']) &&
+          get(/databases/$(database)/documents/proposals/$(proposalId)).data.status in ['Active', 'Passed'];
+        allow delete: if false;
+      }
+    }
+  }
+}

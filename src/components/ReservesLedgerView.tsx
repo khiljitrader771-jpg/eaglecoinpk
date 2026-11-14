@@ -140,7 +140,16 @@ export function ReservesLedgerView({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 rounded-lg">
               {(
-                ['All', 'Mint', 'Redeem', 'Swap', 'Auto-LP', 'Rebalance', 'Exchange'] as const
+                [
+                  'All',
+                  'Mint',
+                  'Redeem',
+                  'Swap',
+                  'Auto-LP',
+                  'Rebalance',
+                  'Exchange',
+                  'Governance',
+                ] as const
               ).map((type) => (
                 <button
                   key={type}
