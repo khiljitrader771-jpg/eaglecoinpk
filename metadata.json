@@ -1,0 +1,8 @@
+{
+  "name": "Eaglecoinpk",
+  "description": "USD-pegged stablecoin protocol with automated liquidity injection, peg stability module, smart contract suite, and exchange listing portal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
